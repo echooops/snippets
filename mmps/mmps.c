@@ -12,7 +12,6 @@ static size_t min(size_t lhs, size_t rhs)
 {
     return lhs < rhs ? lhs : rhs;
 }
-
 struct mmps_t *mmps_init(const char *filename, size_t size)
 {
     struct mmps_t *p = NULL;
@@ -28,7 +27,7 @@ struct mmps_t *mmps_init(const char *filename, size_t size)
         p = (struct mmps_t *)mmap(NULL, size + sizeof(struct mmps_t), PROT_READ | PROT_WRITE, MAP_FILE | MAP_SHARED, fd, 0);
         if (p == NULL) break;
         p->size = size;
-        buffer = (unsigned char *)++p;
+        buffer = (unsigned char *)p + sizeof(struct mmps_t);
         // msync(p, sizeof(struct mmps_t), MS_SYNC);
     } while (0);
     close(fd);
@@ -39,6 +38,45 @@ void mmps_free(struct mmps_t *mmps)
 {
     munmap(mmps, mmps->size + sizeof(struct mmps_t));
 }
+
+size_t mmps_put(struct mmps_t *mmps, const void *data, size_t len)
+{
+    len = min(len, mmps->size - mmps->in + mmps->out);
+    /* buffer 尾 不够 len 的长度时需要转到 buffer 首 */
+    size_t l = min(len, mmps->size - (mmps->in & (mmps->size - 1)));
+    /* 拷贝数据 */
+    memcpy(buffer + (mmps->in & (mmps->size - 1)), data, l);
+    memcpy(buffer, data + l, len - l);
+    /* 每次累加写入量，到达最大值后溢出*/
+    mmps->in += len;
+    return len;
+}
+
+size_t mmps_get(struct mmps_t *mmps, void *data, size_t len)
+{
+    len = min(len, mmps->in - mmps->out);
+    size_t l = min(len, mmps->size - (mmps->out & (mmps->size - 1)));
+
+    /* 读取 buffer 尾巴，和 buffer 头的数据 */
+    memcpy(data, buffer + (mmps->out & (mmps->size - 1)), l);
+    memcpy(data + l, buffer, len - l);
+
+    /* 每次累加，到达最大值后溢出，自动转为 0 */
+    mmps->out += len;
+    return len;
+}
+struct mmps_data_t *mmps_data_alloc(size_t data_size)
+{
+    struct mmps_data_t *p = malloc(data_size + sizeof(size_t));
+    if (p != NULL) p->size = data_size + sizeof(size_t);
+    return p;
+}
+
+void mmps_data_free(const struct mmps_data_t *mmps_data)
+{
+    if (mmps_data != NULL) free((void *)mmps_data);
+}
+
 size_t mmps_data_put(struct mmps_t *mmps, const struct mmps_data_t *mmps_data)
 {
     if (mmps_space(mmps) < mmps_data->size) return 0;
@@ -76,17 +114,6 @@ size_t mmps_data_get(struct mmps_t *mmps, struct mmps_data_t **mmps_data)
     return len;
 }
 
-struct mmps_data_t *mmps_data_alloc(size_t data_size)
-{
-    struct mmps_data_t *p = malloc(data_size + sizeof(size_t));
-    if (p != NULL) p->size = data_size + sizeof(size_t);
-    return p;
-}
-
-void mmps_data_free(const struct mmps_data_t *mmps_data)
-{
-    if (mmps_data != NULL) free((void *)mmps_data);
-}
 
 size_t mmps_size(struct mmps_t *mmps)
 {
