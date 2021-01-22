@@ -41,5 +41,13 @@ int main(int argc, char *argv[])
             }
         }
     }
+    
+    std::string text = "192.168.0.1";
+    std::regex ws_re("\\.");
+    std::vector<std::string> v(std::sregex_token_iterator(text.begin(), text.end(), ws_re, -1), std::sregex_token_iterator());
+    
+    for (auto &&e : v) {
+        std::cout << std::stoi(e) << std::endl;
+    }
     return 0;
 }
