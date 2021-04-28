@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 2.8)
 # Qt 安装目录
-set (CMAKE_PREFIX_PATH "/Applications/Qt5.12.3/5.12.3/clang_64")
+set (CMAKE_PREFIX_PATH "/Applications/Qt5.14.2/5.14.2/clang_64")
 # cquery 补全 json 文件
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -22,6 +22,12 @@ file (GLOB Resources *.qrc)
 qt5_add_resources (ResourceSources ${Resources})
 
 include_directories (${CMAKE_CURRENT_BINARY_DIR})
+
+# QZipWriter/QZipReader
+#include <QtGui/private/qzipwriter_p.h>
+#include <QtGui/private/qzipreader_p.h>
+include_directories (${CMAKE_PREFIX_PATH}/include/QtGui/5.14.2)
+include_directories (${CMAKE_PREFIX_PATH}/include/QtCore/5.14.2)
 
 # Tell CMake to create the helloworld executable
 add_executable (Test ${Sources} ${Headers} ${ResourceSources})
