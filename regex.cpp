@@ -42,6 +42,12 @@ int main(int argc, char *argv[])
         }
     }
     
+    std::string ip = "127.0.0.1";
+    std::regex ipv4_regex("^(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[0-9]{1,2})(\\.(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[0-9]{1,2})){3}$");
+    if (std::regex_match(ip, ipv4_regex)) {
+        std::cout << "成功匹配" << "\n";
+    }
+
     std::string text = "192.168.0.1";
     std::regex ws_re("\\.");
     std::vector<std::string> v(std::sregex_token_iterator(text.begin(), text.end(), ws_re, -1), std::sregex_token_iterator());
